@@ -10,9 +10,9 @@ from telegram.ext import (
 import asyncio
 
 BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
-GROUP_ID = -1003544800297
+GROUP_ID = -1003806202683
 
-# Store kicked users
+# Store banned users
 banned_users = {}
 
 # /start command
@@ -21,16 +21,18 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Hi! Preview bot is online and working."
     )
 
-# New member join
+# Detect new members
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.message.new_chat_members:
 
         for user in update.message.new_chat_members:
 
+            # Save user for unban command
             banned_users[user.username] = user.id
 
-            await context.bot.send_message(
+            # Send welcome message
+            msg = await context.bot.send_message(
                 chat_id=GROUP_ID,
                 text=(
                     f"Welcome {user.first_name}!\n\n"
@@ -41,7 +43,17 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             print(f"{user.first_name} joined")
 
-            await asyncio.sleep(40)
+            # Wait 10 sec
+            await asyncio.sleep(10)
+
+            # Delete welcome message
+            await context.bot.delete_message(
+                chat_id=GROUP_ID,
+                message_id=msg.message_id
+            )
+
+            # Remaining 30 sec
+            await asyncio.sleep(30)
 
             # Kick user
             await context.bot.ban_chat_member(
@@ -51,7 +63,7 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             print(f"{user.first_name} removed")
 
-# /unban username
+# /unban command
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if len(context.args) == 0:
