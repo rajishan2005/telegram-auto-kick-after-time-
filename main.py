@@ -9,8 +9,11 @@ from telegram.ext import (
 
 import asyncio
 
-BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
-GROUP_ID = -1003544800297
+BOT_TOKEN = "YOUR_BOT_TOKEN"
+GROUP_ID = -100XXXXXXXXXX
+
+# Store kicked users
+banned_users = {}
 
 # /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -18,14 +21,15 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Hi! Preview bot is online and working."
     )
 
-# New member join handler
+# New member join
 async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if update.message.new_chat_members:
 
         for user in update.message.new_chat_members:
 
-            # Welcome message IN GROUP
+            banned_users[user.username] = user.id
+
             await context.bot.send_message(
                 chat_id=GROUP_ID,
                 text=(
@@ -37,10 +41,9 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             print(f"{user.first_name} joined")
 
-            # Wait 40 sec
             await asyncio.sleep(40)
 
-            # Ban user
+            # Kick user
             await context.bot.ban_chat_member(
                 chat_id=GROUP_ID,
                 user_id=user.id
@@ -48,10 +51,39 @@ async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
             print(f"{user.first_name} removed")
 
+# /unban username
+async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    if len(context.args) == 0:
+        await update.message.reply_text(
+            "Usage: /unban username"
+        )
+        return
+
+    username = context.args[0].replace("@", "")
+
+    if username not in banned_users:
+        await update.message.reply_text(
+            "User not found."
+        )
+        return
+
+    user_id = banned_users[username]
+
+    await context.bot.unban_chat_member(
+        chat_id=GROUP_ID,
+        user_id=user_id
+    )
+
+    await update.message.reply_text(
+        f"@{username} has been unbanned."
+    )
+
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Handlers
 app.add_handler(CommandHandler("start", start))
+app.add_handler(CommandHandler("unban", unban))
 
 app.add_handler(
     MessageHandler(
