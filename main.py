@@ -9,98 +9,110 @@ from telegram.ext import (
 
 import asyncio
 
-BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
-GROUP_ID = -1003806202683
+BOT_TOKEN = "YOUR_BOT_TOKEN"
 
-# Store banned users
-banned_users = {}
+# ---------------- START COMMAND ----------------
 
-# /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
-        "Hi! Preview bot is online and working."
+        "Preview bot is online."
     )
 
-# Detect new members
-async def welcome(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# ---------------- NEW MEMBER ----------------
 
-    if update.message.new_chat_members:
+async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-        for user in update.message.new_chat_members:
+    chat_id = update.effective_chat.id
 
-            # Save user for unban command
-            banned_users[user.username] = user.id
+    for user in update.message.new_chat_members:
 
-            # Send welcome message
-            msg = await context.bot.send_message(
-                chat_id=GROUP_ID,
-                text=(
-                    f"Welcome {user.first_name}!\n\n"
-                    f"You have 40 seconds to view the preview.\n"
-                    f"After that, you will be removed automatically."
-                )
-            )
+        # Send welcome message
+        msg = await update.message.reply_text(
+            f"Welcome {user.first_name}!\n"
+            f"You have 40 seconds to preview the content."
+        )
 
-            print(f"{user.first_name} joined")
+        print(f"{user.first_name} joined")
 
-            # Wait 10 sec
+        # Delete welcome message after 10 sec
+        async def delete_message():
             await asyncio.sleep(10)
 
-            # Delete welcome message
-            await context.bot.delete_message(
-                chat_id=GROUP_ID,
-                message_id=msg.message_id
-            )
+            try:
+                await msg.delete()
+            except:
+                pass
 
-            # Remaining 30 sec
-            await asyncio.sleep(30)
+        asyncio.create_task(delete_message())
 
-            # Kick user
-            await context.bot.ban_chat_member(
-                chat_id=GROUP_ID,
-                user_id=user.id
-            )
+        # Remove user after 40 sec
+        async def remove_user(user_id, name):
 
-            print(f"{user.first_name} removed")
+            await asyncio.sleep(40)
 
-# /unban command
+            try:
+                # Ban
+                await context.bot.ban_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id
+                )
+
+                # Instantly unban so they can join again later
+                await context.bot.unban_chat_member(
+                    chat_id=chat_id,
+                    user_id=user_id,
+                    only_if_banned=True
+                )
+
+                print(f"{name} removed")
+
+            except Exception as e:
+                print(e)
+
+        asyncio.create_task(
+            remove_user(user.id, user.first_name)
+        )
+
+# ---------------- UNBAN COMMAND ----------------
+
 async def unban(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    if len(context.args) == 0:
+    chat_id = update.effective_chat.id
+
+    if not context.args:
         await update.message.reply_text(
-            "Usage: /unban username"
+            "Usage: /unban USER_ID"
         )
         return
 
-    username = context.args[0].replace("@", "")
+    try:
+        user_id = int(context.args[0])
 
-    if username not in banned_users:
-        await update.message.reply_text(
-            "User not found."
+        await context.bot.unban_chat_member(
+            chat_id=chat_id,
+            user_id=user_id
         )
-        return
 
-    user_id = banned_users[username]
+        await update.message.reply_text(
+            f"User {user_id} unbanned."
+        )
 
-    await context.bot.unban_chat_member(
-        chat_id=GROUP_ID,
-        user_id=user_id
-    )
+    except:
+        await update.message.reply_text(
+            "Invalid user ID."
+        )
 
-    await update.message.reply_text(
-        f"@{username} has been unbanned."
-    )
+# ---------------- MAIN ----------------
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
-# Handlers
 app.add_handler(CommandHandler("start", start))
 app.add_handler(CommandHandler("unban", unban))
 
 app.add_handler(
     MessageHandler(
         filters.StatusUpdate.NEW_CHAT_MEMBERS,
-        welcome
+        new_member
     )
 )
 
