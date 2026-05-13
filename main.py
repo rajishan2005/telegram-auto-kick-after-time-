@@ -9,7 +9,7 @@ from telegram.ext import (
 
 import asyncio
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
+BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
 
 # ---------------- START COMMAND ----------------
 
