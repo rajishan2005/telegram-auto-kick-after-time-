@@ -9,8 +9,8 @@ from telegram.ext import (
 
 import asyncio
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-GROUP_ID = -100XXXXXXXXXX
+BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
+GROUP_ID = -1003544800297
 
 # Store kicked users
 banned_users = {}
