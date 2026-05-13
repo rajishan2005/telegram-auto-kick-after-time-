@@ -8,8 +8,8 @@ from telegram.ext import (
 
 import asyncio
 
-BOT_TOKEN = "YOUR_BOT_TOKEN"
-CHANNEL_ID = -100XXXXXXXXXX
+BOT_TOKEN = "8952613119:AAH18318ilnpQgxJ_1qQtUGg0d6qHokx_t0"
+CHANNEL_ID = -1003806202683
 
 # /start command
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
