@@ -2,8 +2,9 @@ from telegram import Update
 from telegram.ext import (
     ApplicationBuilder,
     CommandHandler,
-    ChatJoinRequestHandler,
-    ContextTypes
+    MessageHandler,
+    ContextTypes,
+    filters
 )
 
 import asyncio
@@ -17,48 +18,48 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "Hi! Preview bot is online and working."
     )
 
-# User join handler
-async def joined(update: Update, context: ContextTypes.DEFAULT_TYPE):
+# Detect new members
+async def new_member(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
-    user = update.chat_join_request.from_user
+    for user in update.message.new_chat_members:
 
-    print(f"{user.first_name} joined")
+        print(f"{user.first_name} joined")
 
-    # Approve join request
-    await context.bot.approve_chat_join_request(
-        chat_id=CHANNEL_ID,
-        user_id=user.id
-    )
-
-    # DM user
-    try:
-        await context.bot.send_message(
-            chat_id=user.id,
-            text=(
-                f"Hi {user.first_name}!\n\n"
-                f"You now have 40 seconds to view the preview.\n"
-                f"After that, access will be removed automatically."
+        # DM user
+        try:
+            await context.bot.send_message(
+                chat_id=user.id,
+                text=(
+                    f"Welcome {user.first_name}!\n\n"
+                    f"You have 40 seconds to preview the content.\n"
+                    f"After that, you will be removed automatically."
+                )
             )
+        except:
+            print("Could not DM user")
+
+        # Wait 40 seconds
+        await asyncio.sleep(40)
+
+        # Ban user permanently
+        await context.bot.ban_chat_member(
+            chat_id=CHANNEL_ID,
+            user_id=user.id
         )
-    except:
-        print("Could not DM user")
 
-    # Wait 40 seconds
-    await asyncio.sleep(40)
-
-    # Kick/Ban user
-    await context.bot.ban_chat_member(
-        chat_id=CHANNEL_ID,
-        user_id=user.id
-    )
-
-    print(f"{user.first_name} removed")
+        print(f"{user.first_name} removed")
 
 app = ApplicationBuilder().token(BOT_TOKEN).build()
 
 # Handlers
 app.add_handler(CommandHandler("start", start))
-app.add_handler(ChatJoinRequestHandler(joined))
+
+app.add_handler(
+    MessageHandler(
+        filters.StatusUpdate.NEW_CHAT_MEMBERS,
+        new_member
+    )
+)
 
 print("Bot running...")
 
